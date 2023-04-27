@@ -1,6 +1,6 @@
 ## Project Name: Tycoon Royale
-## Description:
-A web-based card game based on the rules outlined by Persona 5 Royal’s Thieves’ Den Tycoon Minigame.
+### Description:
+A web-based card game based loosely on the rules outlined by Persona 5 Royal’s Thieves’ Den Tycoon Minigame.
 
 The general rule set for this version of Tycoon is as follows: 
 >Tycoon is a discard-based card game where the main objective is to discard your entire hand as soon as possible. Each player is given a hand of 13 card that they can discard either in matching singles, doubles, triples, or in a special 4-card format called a ‘revolution’. These cards are ranked by their card number and special house rules (3, 4, 5, 6, 7, 8, 9 , 10, Jack, Queen, King, Ace, 2 and then Joker is the strongest). In some instances, however, a 3 of spades can be played on top of a unpaired Joker as a ‘3 Spade Reversal’, which is the strongest play in the game. 
@@ -11,8 +11,8 @@ The general rule set for this version of Tycoon is as follows:
 
 >The first round starts out with everyone being a ‘Commoner’ but the first person to discard all of their cards is crowned the ‘Tycoon’ for the next round. The next person is crowned ‘Rich’, the next, ‘Poor’, and the person that was unable to discard all of their cards is the ‘Beggar’. Points are awarded for each rank, with Tycoon gaining 30, Rich, 20, Poor, 10, and Beggar, 0. The person with the highest point total wins at the end of 3 rounds. The next round starts with the Tycoon and Beggar swapping 2 cards, and the Rich and Poor swapping 1, where they (the Poor and the Beggar) trade their strongest cards with the higher ranks. The Tycoon and Rich can swap whatever card they want, but typically, lower strength cards are swapped because it lowers the chance of the Poor or Beggar winning the next round. The round then begins and is played until someone empties their hand. If anyone either than the Tycoon discards their entire hand first, the Tycoon is immediately declared bankrupt and is automatically the beggar for the next round. Ranks are adjusted accordingly. The game then ends after the 3rd round and the player with the highest point total wins as mentioned before. 
 
-##Technology used:
--Java
--libGDX (Java Game Development Framework/Engine)
--html5/CSS/Bootstrap
--VSCode
+### Technology used:
+- Java
+- libGDX (Java Game Development Framework/Engine)
+- html5/CSS/Bootstrap
+- VSCode
