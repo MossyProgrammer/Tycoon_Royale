@@ -38,7 +38,9 @@ public class Main_Menu implements Screen
 			dispose();
 		}
     }
-    
+    @Override
+	public void dispose()
+	{}
     //unused (for the most part) - but needed to implement Screen
     //===============================================================================
     @Override
@@ -51,6 +53,5 @@ public class Main_Menu implements Screen
 	public void pause(){}
 	@Override
 	public void resume(){}
-	@Override
-	public void dispose(){}
+	
 }
