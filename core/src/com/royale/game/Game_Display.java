@@ -49,10 +49,11 @@ public class Game_Display implements Screen
 	Label roundLabel;
 	Label currentCard;
 
-	Texture card_back, card_back_iso, joker, spades, clubs, hearts, diamonds;
+	Texture card_back, card_back_rotated, joker, spades, clubs, hearts, diamonds;
 	Texture temp;
 
 	ButtonGroup<CheckBox> card_selection;
+	Array<CheckBox> checkbox_reset;
 	Array<CheckBox> checked;
 	TextButton skip;
 	TextButton end_turn;
@@ -83,7 +84,7 @@ public class Game_Display implements Screen
 		
 		//base card textures from Screaming Brain Studios -- https://screamingbrainstudios.itch.io/poker-pack?download
 		card_back = new Texture(Gdx.files.internal("Card_Back-88x124.png"));
-		card_back_iso = new Texture(Gdx.files.internal("Card_Back_Vertical-88x168.png"));
+		card_back_rotated = new Texture(Gdx.files.internal("card_back_rotated.png"));
 		joker = new Texture(Gdx.files.internal("joker-wip.png")); //temp
 		spades = new Texture(Gdx.files.internal("Spades-88x124.png"));
 		clubs = new Texture(Gdx.files.internal("Clubs-88x124.png"));
@@ -127,6 +128,7 @@ public class Game_Display implements Screen
 		stage.addActor(currentCard);
 
 		card_selection = new ButtonGroup<CheckBox>();
+		checkbox_reset = new Array<CheckBox>();
 		checked = new Array<CheckBox>();
 		card_selection.setMaxCheckCount(4);
 		int i = 0;
@@ -137,6 +139,7 @@ public class Game_Display implements Screen
 			btn.setSize(75, 25);
 			btn.setChecked(false);
 			card_selection.add(btn);
+			checkbox_reset.add(btn);
 			stage.addActor(btn);
 			i++; 
 		}
@@ -157,7 +160,7 @@ public class Game_Display implements Screen
 					stage.addActor(dialog);
 					end_of_turn = true;
 					//move to next set of player turns
-					//player_turns();
+					player_turns();
 					return true;
 				}
 			});
@@ -242,23 +245,20 @@ public class Game_Display implements Screen
 				//next person request -> move to next in order
 				Gdx.graphics.requestRendering();
 				end_of_turn = true;
-				//player_turns();
-				//game_logic.player2.hand = player_turn(game_logic.player2.hand);
-				//currentCard.setText(top.suit + " " + top.value);
-				//game_logic.player3.hand = player_turn(game_logic.player3.hand);
-				//game_logic.player4.hand = player_turn(game_logic.player4.hand);
+				player_turns();
+				currentCard.setText(top.suit + " " + top.value);
 				Gdx.graphics.requestRendering();
                 return true;
             }
         });
 		stage.addActor(end_turn);
 		Gdx.graphics.requestRendering();
-		setTycoon(game_logic.player1);
-		setRich(game_logic.player2);
-		setPoor(game_logic.player3);
-		setBeggar(game_logic.player4);
+		//setTycoon(game_logic.player1);
+		//setRich(game_logic.player2);
+		//setPoor(game_logic.player3);
+		//setBeggar(game_logic.player4);
 		//card swap goes here -- first 'submit' goes to swapping
-		if(!game_logic.player1.role.equals("commoner")) //!game_logic....equals() (testing purposes its ==)
+		if(!game_logic.player1.role.equals("commoner")) //!game_logic....equals() (testing purposes its currently ==)
 		{
 			end_turn.setVisible(false);
 			skip.setVisible(false);
@@ -314,7 +314,15 @@ public class Game_Display implements Screen
 						game_logic.player1.hand = card_swap(temp);
 					}
 					swap();
+					//reset checkboxes
+					int i = 0;
+					for(CheckBox btn : checkbox_reset)
+					{
+						btn.setText(game_logic.player1.hand.get(i).suit + " " + game_logic.player1.hand.get(i).value);
+						i++;
+					}
 					card_selection.uncheckAll();
+
 					card_swap.setVisible(false);
 					end_turn.setVisible(true);
 					skip.setVisible(true);
@@ -458,19 +466,22 @@ public class Game_Display implements Screen
 		//temp -- adjust specifics later
 		//render num of cards in opponent's hands in iso(?)/normal card back
 		int iter = 0;
-		temp = new Texture(Gdx.files.internal("Card_Back-88x124.png"));
+		//temp = new Texture(Gdx.files.internal("Card_Back-88x124.png"));
+		temp = card_back_rotated;
 		for(card card : game_logic.player2.hand)
 		{
 			game.batch.draw(temp, 50, ((Gdx.graphics.getHeight()/5) + (iter*45)), 0, 0, 88, 124);
 			iter++;
 		}
 		iter = 0;
+		temp = card_back;
 		for(card card : game_logic.player3.hand)
 		{
 			game.batch.draw(temp, (400 + (iter*90)), 870, 0, 0, 88, 124);
 			iter++;
 		}
 		iter = 0;
+		temp = card_back_rotated;
 		for(card card : game_logic.player4.hand)
 		{
 			game.batch.draw(temp, 1770, ((Gdx.graphics.getHeight()/5) + (iter*45)), 0, 0, 88, 124);
@@ -921,22 +932,34 @@ public class Game_Display implements Screen
 				{
 					case "beggar": //give 2 'strong' cards to tycoon
 					{
-						tycoon_swap = player_swap;
+						for(card card : player_swap)
+                        {
+                            tycoon_swap.add(card);
+                        }
 						break;
 					}
 					case "poor": //give 1 'strong' card to rich
 					{
-						rich_swap = player_swap;
+						for(card card : player_swap)
+                        {
+                            rich_swap.add(card);
+                        }
 						break;
 					}
 					case "rich": //give 1 'weak' card to poor
 					{
-						poor_swap = player_swap;
+						for(card card : player_swap)
+                        {
+                            poor_swap.add(card);
+                        }
 						break;
 					}
 					case "tycoon": //give 2 'weak' cards to beggar
 					{
-						beggar_swap = player_swap;
+						for(card card : player_swap)
+                        {
+                            beggar_swap.add(card);
+                        }
 						break;
 					}
 				}
@@ -973,24 +996,34 @@ public class Game_Display implements Screen
 			{
 				case "beggar": //give 2 'strong' cards to tycoon
 				{
-					player.hand.add(beggar_swap.get(0));
-					player.hand.add(beggar_swap.get(1));
+                    for(card card : beggar_swap)
+                    {
+                        player.hand.add(card);
+                    }
 					break;
 				}
 				case "poor": //give 1 'strong' card to rich
 				{
-					player.hand.add(poor_swap.get(0));
+					for(card card : poor_swap)
+                    {
+                        player.hand.add(card);
+                    }
 					break;
 				}
 				case "rich": //give 1 'weak' card to poor
 				{
-					player.hand.add(rich_swap.get(0));
+					for(card card : rich_swap)
+                    {
+                        player.hand.add(card);
+                    }
 					break;
 				}
 				case "tycoon": //give 2 'weak' cards to beggar
 				{
-					player.hand.add(tycoon_swap.get(0));
-					player.hand.add(tycoon_swap.get(1));
+					for(card card : tycoon_swap)
+                    {
+                        player.hand.add(card);
+                    }
 					break;
 				}
 			}
@@ -1000,9 +1033,12 @@ public class Game_Display implements Screen
 //===============================================================================
 	public void player_turns()
 	{
-		player_turn(game_logic.player2.hand);
-		player_turn(game_logic.player3.hand);
-		player_turn(game_logic.player4.hand);
+		game_logic.player2.hand = player_turn(game_logic.player2.hand);
+		currentCard.setText(top.suit + " " + top.value);
+		game_logic.player3.hand = player_turn(game_logic.player3.hand);
+		currentCard.setText(top.suit + " " + top.value);
+		game_logic.player4.hand = player_turn(game_logic.player4.hand);
+		currentCard.setText(top.suit + " " + top.value);
 	}
 	List<card> player_turn(List<card> player_hand)
     {
@@ -1014,7 +1050,7 @@ public class Game_Display implements Screen
         if(discard_deck.isEmpty())
         {
             Random rnd = ThreadLocalRandom.current();
-            int index = rnd.nextInt(player_hand.size()-1);
+            int index = rnd.nextInt(player_hand.size());
             //int played = rnd.nextInt(4);
             viable.add(player_hand.get(index));
             player_hand = discard(player_hand, viable);
@@ -1144,7 +1180,7 @@ public class Game_Display implements Screen
         discard_deck.clear();
         hand_return = new LinkedList<card>();
         Random rnd = ThreadLocalRandom.current();
-        int index = rnd.nextInt(input.size()-1);
+        int index = rnd.nextInt(input.size());
         int remove_index = 0;
 
         if(discard_size == 1)
@@ -1163,7 +1199,10 @@ public class Game_Display implements Screen
         }
         else
         {
-            //int i = 0;
+            for(card card : input)
+            {
+                player_hand.remove(card);
+            }
         }
         hand_return = player_hand;
         return hand_return;
