@@ -14,7 +14,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.graphics.glutils.HdpiUtils;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.scenes.scene2d.EventListener;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -25,6 +25,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.actions.RunnableAction;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions.*;
 //./gradlew html:superDev
 public class Game_Display implements Screen
 {
@@ -48,6 +50,10 @@ public class Game_Display implements Screen
 	Label outputLabel;
 	Label roundLabel;
 	Label currentCard;
+	Label p1_role;
+	Label p2_role;
+	Label p3_role;
+	Label p4_role;
 
 	Texture card_back, card_back_rotated, joker, spades, clubs, hearts, diamonds;
 	Texture temp;
@@ -55,8 +61,8 @@ public class Game_Display implements Screen
 	ButtonGroup<CheckBox> card_selection;
 	Array<CheckBox> checkbox_reset;
 	Array<CheckBox> checked;
-	TextButton skip;
-	TextButton end_turn;
+	CheckBox skip;
+	TextButton submit;
 	TextButton card_swap;
 	Dialog dialog;
 
@@ -71,6 +77,9 @@ public class Game_Display implements Screen
 	boolean end_of_chain;
 	boolean end_of_round;
 	boolean isRevolution;
+	boolean tycoon_set;
+	boolean rich_set;
+	boolean poor_set;
 	card top;
 	
 	public Game_Display(final royale input)
@@ -85,7 +94,7 @@ public class Game_Display implements Screen
 		//base card textures from Screaming Brain Studios -- https://screamingbrainstudios.itch.io/poker-pack?download
 		card_back = new Texture(Gdx.files.internal("Card_Back-88x124.png"));
 		card_back_rotated = new Texture(Gdx.files.internal("card_back_rotated.png"));
-		joker = new Texture(Gdx.files.internal("joker-wip.png")); //temp
+		joker = new Texture(Gdx.files.internal("joker.png")); //temp
 		spades = new Texture(Gdx.files.internal("Spades-88x124.png"));
 		clubs = new Texture(Gdx.files.internal("Clubs-88x124.png"));
 		hearts = new Texture(Gdx.files.internal("Hearts-88x124.png"));
@@ -118,13 +127,33 @@ public class Game_Display implements Screen
 		end_of_round = false;
 		end_of_turn = false;
 
+		p1_role = new Label("Role: " + game_logic.player1.role, skin);
+		p1_role.setPosition(700, 20);
+		stage.addActor(p1_role);
+
+		p2_role = new Label("Role: " + game_logic.player2.role, skin);
+		p2_role.setPosition(50, 150);
+		stage.addActor(p2_role);
+
+		p3_role = new Label("Role: " + game_logic.player3.role, skin);
+		p3_role.setPosition(400, 850);
+		stage.addActor(p3_role);
+
+		p4_role = new Label("Role: " + game_logic.player4.role, skin);
+		p4_role.setPosition(1770, 150);
+		stage.addActor(p4_role);
+
+		tycoon_set = false;
+		rich_set = false;
+		poor_set = false;
+
 		//card selection buttons
 		outputLabel = new Label("Select a card:", skin);
 		outputLabel.setPosition(400, 20);
 		stage.addActor(outputLabel);
 
 		currentCard = new Label("Current Card", skin);
-		currentCard.setPosition(600, 20);
+		currentCard.setPosition(800, 20);
 		stage.addActor(currentCard);
 
 		card_selection = new ButtonGroup<CheckBox>();
@@ -145,33 +174,50 @@ public class Game_Display implements Screen
 		}
 		card_selection.uncheckAll();
 		//skip turn
-		skip = new TextButton("Skip Turn", skin);
+		skip = new CheckBox("Skip Turn", skin);
 		skip.setPosition(530, 20);
-		skip.addListener(new InputListener(){
-			@Override
-            public boolean touchDown (InputEvent event, float x, float y, int pointer, int button)
-				{
-					//skip turn --> returns discard? moves to next order?
-					dialog = new Dialog("Skipped", skin);
-					dialog.setHeight(100);
-					dialog.setWidth(250);
-					dialog.setPosition(375, 250);
-					dialog.button("Exit");
-					stage.addActor(dialog);
-					end_of_turn = true;
-					//move to next set of player turns
-					player_turns();
-					return true;
-				}
-			});
 		stage.addActor(skip);
 		//submission/end turn
-		end_turn = new TextButton("Submit", skin);
-		end_turn.setPosition(480, 20);
-		end_turn.addListener(new InputListener(){
+		submit = new TextButton("Submit", skin);
+		submit.setPosition(480, 20);
+		submit.addListener(new InputListener(){
             @Override
             public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
 			{
+				if(skip.isChecked())
+				{
+					skip.setChecked(false);
+					game_logic.player1.skipped = true;
+					
+					Random rnd = ThreadLocalRandom.current();
+            		discard_size = rnd.nextInt(4);
+
+					if(!game_logic.player2.hand.isEmpty())
+					{
+						game_logic.player2.hand = player_turn(game_logic.player2.hand, game_logic.player2);
+						currentCard.setText(top.suit + " " + top.value);
+						checkHand(game_logic.player2);
+					}
+					Gdx.graphics.requestRendering();
+					if(!game_logic.player3.hand.isEmpty())
+					{
+						game_logic.player3.hand = player_turn(game_logic.player3.hand, game_logic.player3);
+						currentCard.setText(top.suit + " " + top.value);
+						checkHand(game_logic.player3);
+					}
+					Gdx.graphics.requestRendering();
+					if(!game_logic.player4.hand.isEmpty())
+					{
+						game_logic.player4.hand = player_turn(game_logic.player4.hand, game_logic.player4);
+						currentCard.setText(top.suit + " " + top.value);
+						checkHand(game_logic.player4);
+					}
+					if(game_logic.player2.skipped && game_logic.player3.skipped && game_logic.player4.skipped)
+					{
+						end_chain();
+					}
+					return false;
+				}
 				checked = card_selection.getAllChecked();
 				List<String> compare = new LinkedList<String>();
 				List<Integer> discarded = new LinkedList<Integer>();
@@ -241,109 +287,49 @@ public class Game_Display implements Screen
 					box.setVisible(false);
 				}
 				card_selection.uncheckAll();
-				
-				//next person request -> move to next in order
-				Gdx.graphics.requestRendering();
-				end_of_turn = true;
-				player_turns();
 				currentCard.setText(top.suit + " " + top.value);
 				Gdx.graphics.requestRendering();
+				
+				//next person request -> move to next in order
+				if(!game_logic.player2.hand.isEmpty())
+				{
+					game_logic.player2.hand = player_turn(game_logic.player2.hand, game_logic.player2);
+					currentCard.setText(top.suit + " " + top.value);
+					checkHand(game_logic.player2);
+				}
+				Gdx.graphics.requestRendering();
+				if(!game_logic.player3.hand.isEmpty())
+				{
+					game_logic.player3.hand = player_turn(game_logic.player3.hand, game_logic.player3);
+					currentCard.setText(top.suit + " " + top.value);
+					checkHand(game_logic.player3);
+				}
+				Gdx.graphics.requestRendering();
+				if(!game_logic.player4.hand.isEmpty())
+				{
+					game_logic.player4.hand = player_turn(game_logic.player4.hand, game_logic.player4);
+					currentCard.setText(top.suit + " " + top.value);
+					checkHand(game_logic.player4);
+				}
+				Gdx.graphics.requestRendering();
+				//end_round();
+				if(game_logic.player2.skipped && game_logic.player3.skipped && game_logic.player4.skipped)
+				{
+					end_chain();
+				}
+				if(tycoon_set && rich_set && poor_set)
+				{
+					end_round();
+				}
                 return true;
             }
         });
-		stage.addActor(end_turn);
+		stage.addActor(submit);
 		Gdx.graphics.requestRendering();
-		//setTycoon(game_logic.player1);
-		//setRich(game_logic.player2);
-		//setPoor(game_logic.player3);
-		//setBeggar(game_logic.player4);
-		//card swap goes here -- first 'submit' goes to swapping
-		if(!game_logic.player1.role.equals("commoner")) //!game_logic....equals() (testing purposes its currently ==)
-		{
-			end_turn.setVisible(false);
-			skip.setVisible(false);
-
-			card_swap_dialog();
-			card_swap = new TextButton("Swap", skin);
-			card_swap.setPosition(480, 20);
-			card_swap.addListener(new InputListener(){
-            	@Override
-            	public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
-				{
-					checked = card_selection.getAllChecked();
-					List<String> compare = new LinkedList<String>();
-					if(checked.size == 0)
-					{
-						dialog = new Dialog("Invalid Entry", skin);
-						dialog.setHeight(100);
-						dialog.setWidth(250);
-						dialog.setPosition(375, 250);
-						dialog.text("Please select at least 1 card");
-						dialog.button("Exit");
-						stage.addActor(dialog);
-						return false;
-					}
-					else if(checked.size > 1 && (game_logic.player1.role.equals("poor") || game_logic.player1.role.equals("rich")))
-					{
-						dialog = new Dialog("Invalid Entry", skin);
-						dialog.setHeight(100);
-						dialog.setWidth(250);
-						dialog.setPosition(375, 250);
-						dialog.text("Too many cards selected, please unselect.");
-						dialog.button("Exit");
-						stage.addActor(dialog);
-						return false;
-					}
-					else if(checked.size > 2 && (game_logic.player1.role.equals("beggar") || game_logic.player1.role.equals("tycoon")))
-					{
-						dialog = new Dialog("Invalid Entry", skin);
-						dialog.setHeight(100);
-						dialog.setWidth(250);
-						dialog.setPosition(375, 250);
-						dialog.text("Too many cards selected, please unselect.");
-						dialog.button("Exit");
-						stage.addActor(dialog);
-						return false;
-					}
-					for(CheckBox box : checked)
-					{
-						compare.add(box.getLabel().toString().substring(7));
-					}
-					for(String temp : compare)
-					{
-						game_logic.player1.hand = card_swap(temp);
-					}
-					swap();
-					//reset checkboxes
-					int i = 0;
-					for(CheckBox btn : checkbox_reset)
-					{
-						btn.setText(game_logic.player1.hand.get(i).suit + " " + game_logic.player1.hand.get(i).value);
-						i++;
-					}
-					card_selection.uncheckAll();
-
-					card_swap.setVisible(false);
-					end_turn.setVisible(true);
-					skip.setVisible(true);
-					Gdx.graphics.requestRendering();
-    	            return true;
-            	}
-        	});
-			stage.addActor(card_swap);
-			Gdx.graphics.requestRendering();
-		}
-
-
-		//start the round
-		/*dialog = new Dialog("Starting Round 1", skin);
-		dialog.setHeight(50);
-		dialog.setWidth(250);
-		dialog.setPosition(375, 250);
-		dialog.button("Begin");
-		stage.addActor(dialog);*/
-
-		//round(game_logic, round_number);
+		
+		//assign_points();
+		Gdx.graphics.requestRendering();
+		//setHands();
 		//continue for rounds 2 & 3 - reset hands and clear discard 
 		//at end, total points and display winner
 		Gdx.graphics.requestRendering();
@@ -391,7 +377,7 @@ public class Game_Display implements Screen
 		ui.dispose();
 		background.dispose();
 		stage.dispose();
-		//texture.dispose();
+		
 	}
 	@Override
 	public void resize(int width, int height)
@@ -455,7 +441,7 @@ public class Game_Display implements Screen
 			}
 			else if(card.value == 14)//joker - different file
 			{
-				game.batch.draw(temp, (400 + (iter*90)), 80, 88, 0, 88, 124);
+				game.batch.draw(temp, (400 + (iter*90)), 80, 0, 0, 88, 124);
 			}
 			iter++;
 		}
@@ -467,10 +453,10 @@ public class Game_Display implements Screen
 		//render num of cards in opponent's hands in iso(?)/normal card back
 		int iter = 0;
 		//temp = new Texture(Gdx.files.internal("Card_Back-88x124.png"));
-		temp = card_back_rotated;
+		temp = card_back_rotated; //whyyyy are these always borkeddddddd
 		for(card card : game_logic.player2.hand)
 		{
-			game.batch.draw(temp, 50, ((Gdx.graphics.getHeight()/5) + (iter*45)), 0, 0, 88, 124);
+			game.batch.draw(temp, 50, ((Gdx.graphics.getHeight()/5) + (iter*50)), 0, 0, 124, 88);
 			iter++;
 		}
 		iter = 0;
@@ -484,19 +470,19 @@ public class Game_Display implements Screen
 		temp = card_back_rotated;
 		for(card card : game_logic.player4.hand)
 		{
-			game.batch.draw(temp, 1770, ((Gdx.graphics.getHeight()/5) + (iter*45)), 0, 0, 88, 124);
+			game.batch.draw(temp, 1770, ((Gdx.graphics.getHeight()/5) + (iter*50)), 0, 0, 124, 88);
 			iter++;
 		}
 	}
 	public void renderDiscardDeck()
 	{
-		temp = new Texture(Gdx.files.internal("Card_Back-88x124.png"));
-		int iter = 0;
-		if(discard_deck.isEmpty())
+		temp = card_back;
+		for(int i = 0; i < 4; i++)
 		{
-			game.batch.draw(temp, 1000, 500, 0, 0, 88, 124);
+			game.batch.draw(temp, (800 + (i*90)), 500, 0, 0, 88, 124);
 		}
-		else
+		int iter = 0;
+		if(!discard_deck.isEmpty())
 		{
 			for(card card : discard_deck)
 			{
@@ -535,45 +521,25 @@ public class Game_Display implements Screen
 				}
 				if(card.value <= 5) //(1-5)
 				{
-					game.batch.draw(temp, (1000 + (iter*90)), 500, (0 + ((card.value - 1)*88)), 0, 88, 124);
+					game.batch.draw(temp, (800 + (iter*90)), 500, (0 + ((card.value - 1)*88)), 0, 88, 124);
 				}
 				else if(card.value > 5 && card.value <= 10) //(6-10)
 				{
-					game.batch.draw(temp, (1000 + (iter*90)), 500, (0 + ((card.value - 6)*88)), 124, 88, 124);
+					game.batch.draw(temp, (800 + (iter*90)), 500, (0 + ((card.value - 6)*88)), 124, 88, 124);
 				}
 				else if(card.value > 10 && card.value != 14) //(JQK)
 				{
-					game.batch.draw(temp, (1000 + (iter*90)), 500, (0 + ((card.value - 11)*88)), 248, 88, 124);
+					game.batch.draw(temp, (800 + (iter*90)), 500, (0 + ((card.value - 11)*88)), 248, 88, 124);
 				}
 				else if(card.value == 14)//joker - different file
 				{
-					game.batch.draw(temp, (1000 + (iter*90)), 500, 88, 0, 88, 124);
+					game.batch.draw(temp, (800 + (iter*90)), 500, 0, 0, 88, 124);
 				}
 				iter++;
 			}
 		}
 	}
 //===============================================================================
-	public void round(logic game_logic)
-	{
-		roundOrder(game_logic.players); //who starts the chain? How would I get that to work?
-		while(!end_of_round)
-		{
-			while(!end_of_chain)
-			{
-				if(end_of_turn)
-				{
-					//player_turns();
-					end_of_turn = false;
-				}
-				//conditions to end chain (no longer can play any cards)
-				//check for tycoon bankrupt	
-			}
-			//set roles
-			//conditions to end round(3 players with empty hands)
-		}
-		assign_points();
-	}
 	void roundOrder(player[] order)
 	{
 		//based on role
@@ -624,11 +590,17 @@ public class Game_Display implements Screen
 	{
 		player.role = "beggar";
 	}
-	void tycoon_bankrupt(player player, List<card> player_hand)
+	void tycoon_bankrupt()
 	{
 		//discard rest of hand and remove from play until next round
-		player.role = "beggar";
-		player_hand.clear();
+		for(player player: game_logic.players)
+		{
+			if(player.role.equals("tycoon"))
+			{
+				player.role = "beggar";
+				player.hand.clear();
+			}
+		}
 	}
 	void assign_points() //based on roles
 	{
@@ -1030,23 +1002,196 @@ public class Game_Display implements Screen
 		}
 		
 	}
-//===============================================================================
-	public void player_turns()
+	public void checkHand(player player)
 	{
-		game_logic.player2.hand = player_turn(game_logic.player2.hand);
-		currentCard.setText(top.suit + " " + top.value);
-		game_logic.player3.hand = player_turn(game_logic.player3.hand);
-		currentCard.setText(top.suit + " " + top.value);
-		game_logic.player4.hand = player_turn(game_logic.player4.hand);
-		currentCard.setText(top.suit + " " + top.value);
+		if(player.hand.isEmpty())
+		{
+			if(tycoon_set)
+			{
+				if(!player.role.equals("tycoon") || !player.role.equals("commoner"))
+				{
+					tycoon_bankrupt();
+				}
+				setTycoon(player);
+				tycoon_set = true;
+			}
+			else if(rich_set)
+			{
+				setRich(player);
+				rich_set = true;
+			}
+			else if(poor_set)
+			{
+				setPoor(player);
+				poor_set = true;
+			}
+		}
+		if(tycoon_set && rich_set && poor_set && !player.hand.isEmpty())
+		{
+			setBeggar(player);
+			end_of_round = true;
+		}
+		update_roles();
 	}
-	List<card> player_turn(List<card> player_hand)
+	void update_roles()
+	{
+		p1_role.setText("Role: " + game_logic.player1.role);
+		p2_role.setText("Role: " + game_logic.player2.role);
+		p3_role.setText("Role: " + game_logic.player3.role);
+		p4_role.setText("Role: " + game_logic.player4.role);
+	}
+	void end_chain()
+	{
+		dialog = new Dialog("End Chain?", skin);
+		dialog.setHeight(100);
+		dialog.setWidth(250);
+		dialog.setPosition(375, 250);
+		TextButton ybtn = new TextButton("Yes", skin);
+		TextButton nbtn = new TextButton("No", skin);
+		ybtn.addListener(new InputListener(){
+            @Override
+         	public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				discard_deck.clear();
+				return true;
+			}
+		});
+		dialog.button(ybtn);
+		dialog.button(nbtn);
+		stage.addActor(dialog);
+	}
+	void end_round()
+	{
+		dialog = new Dialog("End of Round", skin);
+		dialog.setHeight(75);
+		dialog.setWidth(250);
+		dialog.setPosition(375, 250);
+		TextButton ybtn = new TextButton("To Next Round", skin);
+		ybtn.addListener(new InputListener(){
+            @Override
+         	public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				discard_deck.clear();
+				game_logic.player1.hand.clear();
+				game_logic.player2.hand.clear();
+				game_logic.player3.hand.clear();
+				game_logic.player4.hand.clear();
+				assign_points();
+
+				/* setTycoon(game_logic.player1);
+				setRich(game_logic.player2);
+				setPoor(game_logic.player3);
+				setBeggar(game_logic.player4); */
+
+				update_roles();
+				tycoon_set = false;
+				rich_set = false;
+				poor_set = false;
+				int i = 0;
+				setHands(game_logic);
+				//reset checkboxes
+				for(CheckBox btn : checkbox_reset)
+				{
+					btn.setVisible(true);
+					btn.setText(game_logic.player1.hand.get(i).suit + " " + game_logic.player1.hand.get(i).value);
+					i++;
+				}
+				card_selection.uncheckAll();
+				if(!game_logic.player1.role.equals("commoner")) //!game_logic....equals() (testing purposes its currently ==)
+				{
+					submit.setVisible(false);
+					skip.setVisible(false);
+
+					card_swap_dialog();
+					card_swap = new TextButton("Swap", skin);
+					card_swap.setPosition(480, 20);
+					card_swap.addListener(new InputListener(){
+    		        	@Override
+      			      	public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+						{
+							checked = card_selection.getAllChecked();
+							List<String> compare = new LinkedList<String>();
+							if(checked.size == 0)
+							{
+								dialog = new Dialog("Invalid Entry", skin);
+								dialog.setHeight(100);
+								dialog.setWidth(250);
+								dialog.setPosition(375, 250);
+								dialog.text("Please select at least 1 card");
+								dialog.button("Exit");
+								stage.addActor(dialog);
+								return false;
+							}
+							else if(checked.size > 1 && (game_logic.player1.role.equals("poor") || game_logic.player1.role.equals("rich")))
+							{
+								dialog = new Dialog("Invalid Entry", skin);
+								dialog.setHeight(100);
+								dialog.setWidth(250);
+								dialog.setPosition(375, 250);
+								dialog.text("Too many cards selected, please unselect.");
+								dialog.button("Exit");
+								stage.addActor(dialog);
+								return false;
+							}
+							else if(checked.size > 2 && (game_logic.player1.role.equals("beggar") || game_logic.player1.role.equals("tycoon")))
+							{
+								dialog = new Dialog("Invalid Entry", skin);
+								dialog.setHeight(100);
+								dialog.setWidth(250);
+								dialog.setPosition(375, 250);
+								dialog.text("Too many cards selected, please unselect.");
+								dialog.button("Exit");
+								stage.addActor(dialog);
+								return false;
+							}
+							for(CheckBox box : checked)
+							{
+								compare.add(box.getLabel().toString().substring(7));
+							}
+							for(String temp : compare)
+							{
+								game_logic.player1.hand = card_swap(temp);
+							}
+							swap();
+							//reset checkboxes
+							int i = 0;
+							for(CheckBox btn : checkbox_reset)
+							{
+								btn.setText(game_logic.player1.hand.get(i).suit + " " + game_logic.player1.hand.get(i).value);
+								i++;
+							}
+							card_selection.uncheckAll();
+
+							card_swap.setVisible(false);
+							submit.setVisible(true);
+							skip.setVisible(true);
+							Gdx.graphics.requestRendering();
+    	 		           return true;
+        		    	}
+        			});
+					stage.addActor(card_swap);
+					Gdx.graphics.requestRendering();
+				}
+				return true;
+			}
+		});
+		dialog.button(ybtn);
+		stage.addActor(dialog);
+	}
+	//===============================================================================
+	List<card> player_turn(List<card> player_hand, player player)
     {
+		//if there is time, improve the decision making (this is in it's most basic form)
         //check top - does the hand have anything higher? -- how many cards are in play? -> choose according to these metrics
         //how many cards?
         List<card> viable = new LinkedList<card>();
+		player.skipped = false;
 		boolean end_turn = false;
         //deal with start of chain
+		if(player_hand.isEmpty())
+		{
+			return player_hand;
+		}
         if(discard_deck.isEmpty())
         {
             Random rnd = ThreadLocalRandom.current();
@@ -1128,6 +1273,11 @@ public class Game_Display implements Screen
                     viable.add(card);
                 }
             }
+			if(viable.isEmpty())
+			{
+				player.skipped = true;
+				return player_hand;
+			}
             //deal with discards bigger than one card
             List<card> toDiscard = new LinkedList<card>();
             if(discard_size > 1)
@@ -1202,6 +1352,7 @@ public class Game_Display implements Screen
             for(card card : input)
             {
                 player_hand.remove(card);
+				top = card;
             }
         }
         hand_return = player_hand;

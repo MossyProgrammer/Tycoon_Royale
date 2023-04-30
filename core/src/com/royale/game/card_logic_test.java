@@ -2,7 +2,7 @@ package com.royale.game;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 //The Dumb Version(tm)
-public class card_logic_test 
+public class card_logic_test extends Thread
 {
     static List<card> player1_hand;
     static List<card> player2_hand;
@@ -27,7 +27,6 @@ public class card_logic_test
 	    game_logic.deck.deal_hand(game_logic.player4, 3);  
 
         Scanner input = new Scanner(System.in);
-        boolean end = false;
         isRevolution = false;
         player1_hand = new LinkedList<card>();
         player2_hand = new LinkedList<card>();
@@ -58,7 +57,7 @@ public class card_logic_test
         System.out.println("\nTycoon Card Test");
         System.out.println("=============================================");
 
-        setTycoon(game_logic.player1);
+        /*setTycoon(game_logic.player1);
 		setRich(game_logic.player2);
 		setPoor(game_logic.player3);
 		setBeggar(game_logic.player4);
@@ -74,134 +73,12 @@ public class card_logic_test
         System.out.print("Please enter 2nd card to swap: ");
         card_input = input.nextLine();
         game_logic.player1.hand = card_swap(card_input);
-        swap();
+        swap();*/
 
-
-
-
-
-
-
-        /*System.out.print("How many cards do you want to discard?: ");
+        System.out.print("How many cards do you want to discard?: ");
         String parseInput = input.nextLine();
-        int num_of_cards = Integer.parseInt(parseInput);
-        discard_size = num_of_cards;
+        discard_size = Integer.parseInt(parseInput);
         System.out.println();
-        while(!end)
-        {
-            for(card card : player1_hand)
-            {
-                System.out.print(card.suit + " " + card.value + "(" + card.power + ")" + " || ");
-            }
-            if(!discard_deck.isEmpty())
-            {
-                System.out.print("\n\nDiscard Deck: ");
-                for(card card : discard_deck)
-                {
-                    System.out.print(card.suit + " " + card.value + "(" + card.power + ")" + " ");
-                }
-            }
-            System.out.println();
-            if(num_of_cards == 0)
-            {
-                System.out.print("End Test? (y/n): ");
-                String exit = input.nextLine();
-                if(exit.equals("y"))
-                {
-                    System.out.println("Test ended.");
-                    input.close();
-                    break;
-                }
-            }
-            else if(num_of_cards == 1)
-            {
-                System.out.print("Please enter a card to discard (i.e. diamonds 3): ");
-                String card_input = input.nextLine();
-                card temp = new card();
-                for(card card : player1_hand)
-                {
-                    if(card_input.equals(card.suit + " " + card.value))
-                    {
-                        temp = card;
-                    }
-                }
-                if(discard_deck.isEmpty())
-                {
-                    player1_hand = discard(card_input);
-                }
-                else
-                {
-                    if(temp.power <= top.power)
-                    {
-                        System.out.println("\nCard too weak. Please enter a stronger card.\n");
-                        continue;
-                    }
-                    else
-                    {
-                        player1_hand = discard(card_input);
-                    }   
-                }
-            }
-            else
-            {
-                System.out.print("Please enter a card to discard: ");
-                String card_input = input.nextLine();
-                int firstCard = Integer.parseInt(card_input.substring(card_input.indexOf(" ") + 1));
-                card temp = new card();
-                for(card card : player1_hand)
-                {
-                    if(card_input.equals(card.suit + " " + card.value))
-                    {
-                        temp = card;
-                    }
-                }
-                if(discard_deck.isEmpty())
-                {
-                    player1_hand = discard(card_input);
-                }
-                else
-                {
-                    if(temp.power <= top.power)
-                    {
-                        System.out.println("\nCard too weak. Please enter a stronger card.\n");
-                        continue;
-                    }
-                    //else if card is 8 (break)
-                    //else if discard == 2 -> 3 of Spades Reversal 
-                    else
-                    {
-                        player1_hand = discard(card_input);
-                    }   
-                }
-                //System.out.println(firstCard);
-                for(int i = 0; i < (num_of_cards - 1); i++)
-                {
-                    System.out.print("Please enter a card to discard: ");
-                    card_input = input.nextLine();
-                    int compare = Integer.parseInt(card_input.substring(card_input.indexOf(" ") + 1));
-                    //System.out.println(compare);
-                    if(compare == firstCard || firstCard == 14 || compare == 14)
-                    {
-                        player1_hand = discard(card_input);
-                    }
-                    else
-                    {
-                        System.out.println("Please enter cards with matching values.");
-                        break;
-                    }
-                }
-                if(num_of_cards == 4)
-                {
-                    System.out.println("REVOLT!! -- CARD STRENGTH REVERSED");
-                }
-            }
-            System.out.println("=============================================");
-            System.out.println("\n" + game_logic.player2.name + "\'s hand: " + player2_hand.size());
-            for(card card : player2_hand)
-            {  
-                System.out.print(card.suit + "-" + card.value + " ");
-            }
-            player2_hand = player_turn(player2_hand);
             /*if(!discard_deck.isEmpty())
             {
                 System.out.print("\n\nDiscard Deck: ");
@@ -215,8 +92,13 @@ public class card_logic_test
             {  
                 System.out.print(card.suit + "-" + card.value + " ");
             }
-            System.out.println("\n=============================================");
-        }*/
+            System.out.println("\n=============================================");*/
+        new Thread(){
+            @Override public void run() { round(); }
+        }.start();
+        new Thread(){
+            @Override public void run() { input(); }
+        }.start();
     }
     static List<card> discard(String input)
     {
@@ -372,10 +254,10 @@ public class card_logic_test
         hand_return = player_hand;
         return hand_return;
     }
-    static List<card> card_swap(List<card> player_hand, int num_of_cards, String role)
+    static List<card> card_swap(List<card> player_hand, int discard_size, String role)
     {
         List<card> swap = new LinkedList<card>();
-        for(int i = 0; i < num_of_cards; i++)
+        for(int i = 0; i < discard_size; i++)
         {
             Random rnd = ThreadLocalRandom.current();
             int index;
@@ -561,5 +443,97 @@ public class card_logic_test
 	{
 		player.role = "beggar";
 	}
-    
+    static void player_turns()
+    {
+        game_logic.player2.hand = player_turn(game_logic.player2.hand);
+        game_logic.player3.hand = player_turn(game_logic.player3.hand);
+        game_logic.player4.hand = player_turn(game_logic.player4.hand);
+    }
+    synchronized static public void input()
+    {
+        Scanner input = new Scanner(System.in);
+        for(card card : player1_hand)
+        {
+            System.out.print(card.suit + " " + card.value + "(" + card.power + ")" + " || ");
+        }
+        if(!discard_deck.isEmpty())
+        {
+            System.out.print("\n\nDiscard Deck: ");
+            for(card card : discard_deck)
+            {
+                System.out.print(card.suit + " " + card.value + "(" + card.power + ")" + " ");
+            }
+        }
+        System.out.println();
+        /* if(discard_size == 0)
+        {
+            System.out.print("End Test? (y/n): ");
+            String exit = input.nextLine();
+            if(exit.equals("y"))
+            {
+                System.out.println("Test ended.");
+                input.close();
+                break;
+            }
+        } */
+        if(discard_size == 1)
+        {
+            System.out.print("Please enter a card to discard (i.e. diamonds 3): ");
+            String card_input = input.nextLine();
+            card temp = new card();
+            for(card card : player1_hand)
+            {
+                if(card_input.equals(card.suit + " " + card.value))
+                {
+                    temp = card;
+                }
+            }
+            player1_hand = discard(card_input);
+        }
+        else
+        {
+            System.out.print("Please enter a card to discard: ");
+            String card_input = input.nextLine();
+            int firstCard = Integer.parseInt(card_input.substring(card_input.indexOf(" ") + 1));
+            card temp = new card();
+            for(card card : player1_hand)
+            {
+                if(card_input.equals(card.suit + " " + card.value))
+                {
+                    temp = card;
+                }
+            }
+            player1_hand = discard(card_input);
+            //System.out.println(firstCard);
+            for(int i = 0; i < (discard_size - 1); i++)
+            {
+                System.out.print("Please enter a card to discard: ");
+                card_input = input.nextLine();
+                int compare = Integer.parseInt(card_input.substring(card_input.indexOf(" ") + 1));
+                //System.out.println(compare);
+                if(compare == firstCard || firstCard == 14 || compare == 14)
+                {
+                    player1_hand = discard(card_input);
+                }
+                else
+                {
+                    System.out.println("Please enter cards with matching values.");
+                    break;
+                }
+            }
+            if(discard_size == 4)
+            {
+                System.out.println("REVOLT!! -- CARD STRENGTH REVERSED");
+            }
+        }
+        //notify();
+    }
+    synchronized static public void round()
+    {
+        boolean end = false;
+        while(!end)
+        {
+
+        }
+    }
 }
