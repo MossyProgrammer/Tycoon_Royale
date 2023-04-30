@@ -16,3 +16,9 @@ The general rule set for this version of Tycoon is as follows:
 - libGDX (Java Game Development Framework/Engine)
 - html5/CSS/Bootstrap
 - VSCode
+
+*(Written for Computer Science Senior Project - Indiana Tech CS4960)*
+
+Is this project perfect? No. Does it work? About as well as I could get it to work. Did I do as good I as I could with the time I had? I sure hope I did, granted, I felt like I spent most of my semester learning the game engine, but I think it turned out as well as I could potentially get it being a one-man team.
+
+I will eventually come back to this and overhaul everything to hopefully make it better, but boy, I underestimated how hard games are to write and I even *knew* games weren't the easiest thing to code to begin with. Price for my hubris, I suppose.  
