@@ -1,6 +1,6 @@
 ## Project Name: Tycoon Royale
 ### Description:
-A web-based card game based loosely on the rules outlined by Persona 5 Royal’s Thieves’ Den Tycoon Minigame.
+A card game based loosely on the rules outlined by Persona 5 Royal’s Thieves’ Den Tycoon Minigame.
 
 The general rule set for this version of Tycoon is as follows: 
 >Tycoon is a discard-based card game where the main objective is to discard your entire hand as soon as possible. Each player is given a hand of 13 card that they can discard either in matching singles, doubles, triples, or in a special 4-card format called a ‘revolution’. These cards are ranked by their card number and special house rules (3, 4, 5, 6, 7, 8, 9 , 10, Jack, Queen, King, Ace, 2 and then Joker is the strongest). In some instances, however, a 3 of spades can be played on top of a unpaired Joker as a ‘3 Spade Reversal’, which is the strongest play in the game. 
@@ -16,3 +16,9 @@ The general rule set for this version of Tycoon is as follows:
 - libGDX (Java Game Development Framework/Engine)
 - html5/CSS/Bootstrap
 - VSCode
+
+*(Written for Computer Science Senior Project - Indiana Tech CS4960)*
+
+Is this project perfect? No. Does it work? About as well as I could get it to work. Did I do as good I as I could with the time I had? I sure hope I did, granted, I felt like I spent most of my semester learning the game engine, but I think it turned out as well as I could potentially get it being a one-man team.
+
+I will eventually come back to this and overhaul everything to hopefully make it better, but boy, I underestimated how hard games are to write and I even *knew* games weren't the easiest thing to code to begin with. Price for my hubris, I suppose.  
