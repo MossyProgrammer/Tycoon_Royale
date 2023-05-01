@@ -1,7 +1,6 @@
 package com.royale.game;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.audio.Music;
@@ -14,7 +13,6 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.graphics.glutils.HdpiUtils;
-import com.badlogic.gdx.scenes.scene2d.EventListener;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -25,8 +23,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.actions.RunnableAction;
-import com.badlogic.gdx.scenes.scene2d.actions.Actions.*;
 //./gradlew html:superDev
 public class Game_Display implements Screen
 {
@@ -50,10 +46,7 @@ public class Game_Display implements Screen
 	Label outputLabel;
 	Label roundLabel;
 	Label currentCard;
-	Label p1_role;
-	Label p2_role;
-	Label p3_role;
-	Label p4_role;
+	Label p1_role, p2_role, p3_role, p4_role;
 
 	Texture card_back, card_back_rotated, joker, spades, clubs, hearts, diamonds;
 	Texture temp;
@@ -73,13 +66,9 @@ public class Game_Display implements Screen
 	List<card> hand_return;
     List<card> swap_return;
 	boolean dupe;
-	boolean end_of_turn;
-	boolean end_of_chain;
-	boolean end_of_round;
+	boolean end_of_turn, end_of_chain, end_of_round;
 	boolean isRevolution;
-	boolean tycoon_set;
-	boolean rich_set;
-	boolean poor_set;
+	boolean tycoon_set, rich_set, poor_set;
 	card top;
 	
 	public Game_Display(final royale input)
@@ -540,7 +529,7 @@ public class Game_Display implements Screen
 		}
 	}
 //===============================================================================
-	void roundOrder(player[] order)
+	private void roundOrder(player[] order)
 	{
 		//based on role
 		if(game_logic.player1.role.equals("commoner"))
@@ -574,23 +563,23 @@ public class Game_Display implements Screen
 			}
 		}
 	}
-	void setTycoon(player player)
+	private void setTycoon(player player)
 	{
 		player.role = "tycoon";
 	}
-	void setRich(player player)
+	private void setRich(player player)
 	{
 		player.role = "rich";
 	}
-	void setPoor(player player)
+	private void setPoor(player player)
 	{
 		player.role = "poor";
 	}
-	void setBeggar(player player)
+	private void setBeggar(player player)
 	{
 		player.role = "beggar";
 	}
-	void tycoon_bankrupt()
+	private void tycoon_bankrupt()
 	{
 		//discard rest of hand and remove from play until next round
 		for(player player: game_logic.players)
@@ -602,7 +591,7 @@ public class Game_Display implements Screen
 			}
 		}
 	}
-	void assign_points() //based on roles
+	private void assign_points() //based on roles
 	{
 		for(player player : game_logic.players)
 		{
@@ -621,7 +610,7 @@ public class Game_Display implements Screen
 			//else - beggar -> 0 points
 		}
 	}
-	public void setHands(logic game_logic)
+	private void setHands(logic game_logic)
 	{
 		game_logic.deck.shuffle();
 		game_logic.deck.deal_hand(game_logic.player1, 0);
@@ -646,7 +635,7 @@ public class Game_Display implements Screen
             game_logic.player4.hand.add(card);
         }
 	}
-	public List<card> discard(String input) //no logic, only discard
+	private List<card> discard(String input) //no logic, only discard
     {
         List<card> returnArr = new LinkedList<card>();
         for(card card : game_logic.player1.hand)
@@ -663,7 +652,7 @@ public class Game_Display implements Screen
        	}
         return returnArr;
     }
-	public boolean checkPower(List<String> input) //only logic, no discard
+	private boolean checkPower(List<String> input) //only logic, no discard
 	{
 		boolean passed = false;
 		List<card> check = new LinkedList<card>();
@@ -744,7 +733,7 @@ public class Game_Display implements Screen
 		//sets discard up with empty discard deck to allow for new set
 		return passed;
 	}
-	public boolean check_revoltPower(List<String> input)
+	private boolean check_revoltPower(List<String> input)
 	{
 		boolean passed = false;
 		List<card> check = new LinkedList<card>();
@@ -818,7 +807,7 @@ public class Game_Display implements Screen
 		//sets discard up with empty discard deck to allow for new set
 		return passed;
 	}
-	public void card_swap_dialog()
+	private void card_swap_dialog()
 	{
 		//functions similiar to discard, 1 card Poor -> Rich // 2 cards Beggar -> Tycoon
 		switch(game_logic.player1.role)
@@ -873,7 +862,7 @@ public class Game_Display implements Screen
 			}
 		}
 	}
-	public List<card> card_swap(String input)
+	private List<card> card_swap(String input)
 	{
 		List<card> returnArr = new LinkedList<card>();
 		player_swap = new LinkedList<card>();
@@ -890,7 +879,7 @@ public class Game_Display implements Screen
        	}
         return returnArr;
 	}
-	public void swap()
+	private void swap()
 	{
 		List<card> tycoon_swap = new LinkedList<card>();
 		List<card> rich_swap = new LinkedList<card>();
@@ -1002,11 +991,11 @@ public class Game_Display implements Screen
 		}
 		
 	}
-	public void checkHand(player player)
+	private void checkHand(player player)
 	{
 		if(player.hand.isEmpty())
 		{
-			if(tycoon_set)
+			if(!tycoon_set)
 			{
 				if(!player.role.equals("tycoon") || !player.role.equals("commoner"))
 				{
@@ -1015,12 +1004,12 @@ public class Game_Display implements Screen
 				setTycoon(player);
 				tycoon_set = true;
 			}
-			else if(rich_set)
+			else if(!rich_set)
 			{
 				setRich(player);
 				rich_set = true;
 			}
-			else if(poor_set)
+			else if(!poor_set)
 			{
 				setPoor(player);
 				poor_set = true;
@@ -1033,14 +1022,14 @@ public class Game_Display implements Screen
 		}
 		update_roles();
 	}
-	void update_roles()
+	private void update_roles()
 	{
 		p1_role.setText("Role: " + game_logic.player1.role);
 		p2_role.setText("Role: " + game_logic.player2.role);
 		p3_role.setText("Role: " + game_logic.player3.role);
 		p4_role.setText("Role: " + game_logic.player4.role);
 	}
-	void end_chain()
+	private void end_chain()
 	{
 		dialog = new Dialog("End Chain?", skin);
 		dialog.setHeight(100);
@@ -1060,7 +1049,7 @@ public class Game_Display implements Screen
 		dialog.button(nbtn);
 		stage.addActor(dialog);
 	}
-	void end_round()
+	private void end_round()
 	{
 		dialog = new Dialog("End of Round", skin);
 		dialog.setHeight(75);
@@ -1179,7 +1168,7 @@ public class Game_Display implements Screen
 		stage.addActor(dialog);
 	}
 	//===============================================================================
-	List<card> player_turn(List<card> player_hand, player player)
+	private List<card> player_turn(List<card> player_hand, player player)
     {
 		//if there is time, improve the decision making (this is in it's most basic form)
         //check top - does the hand have anything higher? -- how many cards are in play? -> choose according to these metrics
@@ -1324,7 +1313,7 @@ public class Game_Display implements Screen
         }
         return player_hand;
     }
-    List<card> discard(List<card> player_hand, List<card> input)
+    private List<card> discard(List<card> player_hand, List<card> input)
     {
         //pick card that matched criteria -> right power (rev/no rev), right num of cards, etc. -> pass into discard (no logic, only removing card)
         discard_deck.clear();
@@ -1358,7 +1347,7 @@ public class Game_Display implements Screen
         hand_return = player_hand;
         return hand_return;
     }
-	List<card> card_swap(List<card> player_hand, int num_of_cards, String role)
+	private List<card> card_swap(List<card> player_hand, int num_of_cards, String role)
     {
         ai_swap = new LinkedList<card>();
         for(int i = 0; i < num_of_cards; i++)

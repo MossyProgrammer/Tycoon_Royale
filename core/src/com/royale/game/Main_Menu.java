@@ -41,7 +41,7 @@ public class Main_Menu implements Screen
     @Override
 	public void dispose()
 	{}
-    //unused (for the most part) - but needed to implement Screen
+    //unused - but needed to implement Screen
     //===============================================================================
     @Override
 	public void resize(int width, int height){}
