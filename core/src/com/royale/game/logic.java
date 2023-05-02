@@ -1,6 +1,5 @@
 package com.royale.game;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class logic 
 {
@@ -98,7 +97,7 @@ class deck
     }
     void shuffle()
     {
-        Random rnd = ThreadLocalRandom.current();
+        Random rnd = new Random();
         for (int i = deck.length - 1; i > 0; i--)
         {
             int index = rnd.nextInt(i + 1);

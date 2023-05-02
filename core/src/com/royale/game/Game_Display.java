@@ -1,6 +1,6 @@
 package com.royale.game;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.audio.Music;
@@ -29,8 +29,8 @@ public class Game_Display implements Screen
     final royale game;
 	logic game_logic;
 
-    Sound cardDealt;
-	Music background_music;
+    //Sound cardDealt;
+	//Music background_music;
 
 	OrthographicCamera camera;
 	Viewport viewport;
@@ -66,7 +66,7 @@ public class Game_Display implements Screen
 	List<card> hand_return;
     List<card> swap_return;
 	boolean dupe;
-	boolean end_of_turn, end_of_chain, end_of_round;
+	boolean end_of_turn, end_of_chain, end_of_round, eight_stop;
 	boolean isRevolution;
 	boolean tycoon_set, rich_set, poor_set;
 	card top;
@@ -169,6 +169,7 @@ public class Game_Display implements Screen
 		//submission/end turn
 		submit = new TextButton("Submit", skin);
 		submit.setPosition(480, 20);
+		discard_size = 0;
 		submit.addListener(new InputListener(){
             @Override
             public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
@@ -178,14 +179,21 @@ public class Game_Display implements Screen
 					skip.setChecked(false);
 					game_logic.player1.skipped = true;
 					
-					Random rnd = ThreadLocalRandom.current();
-            		discard_size = rnd.nextInt(4);
-
+					Random rnd = new Random();
+					if(discard_size == 0)
+					{
+						discard_size = rnd.nextInt(4);
+					}
 					if(!game_logic.player2.hand.isEmpty())
 					{
 						game_logic.player2.hand = player_turn(game_logic.player2.hand, game_logic.player2);
 						currentCard.setText(top.suit + " " + top.value);
 						checkHand(game_logic.player2);
+						if(top.value == 8)
+						{
+							stopped_chain();
+							return false;
+						}
 					}
 					Gdx.graphics.requestRendering();
 					if(!game_logic.player3.hand.isEmpty())
@@ -193,6 +201,11 @@ public class Game_Display implements Screen
 						game_logic.player3.hand = player_turn(game_logic.player3.hand, game_logic.player3);
 						currentCard.setText(top.suit + " " + top.value);
 						checkHand(game_logic.player3);
+						if(top.value == 8)
+						{
+							stopped_chain();
+							return false;
+						}
 					}
 					Gdx.graphics.requestRendering();
 					if(!game_logic.player4.hand.isEmpty())
@@ -200,10 +213,19 @@ public class Game_Display implements Screen
 						game_logic.player4.hand = player_turn(game_logic.player4.hand, game_logic.player4);
 						currentCard.setText(top.suit + " " + top.value);
 						checkHand(game_logic.player4);
+						if(top.value == 8)
+						{
+							stopped_chain();
+							return false;
+						}
 					}
-					if(game_logic.player2.skipped && game_logic.player3.skipped && game_logic.player4.skipped)
+					if((game_logic.player2.skipped && game_logic.player3.skipped && game_logic.player4.skipped) || top.power <= 13) //what would be a better solution?
 					{
 						end_chain();
+					}
+					if(tycoon_set && rich_set && poor_set)
+					{
+						end_round();
 					}
 					return false;
 				}
@@ -278,13 +300,23 @@ public class Game_Display implements Screen
 				card_selection.uncheckAll();
 				currentCard.setText(top.suit + " " + top.value);
 				Gdx.graphics.requestRendering();
-				
+				checkHand(game_logic.player1);
+				if(eight_stop || top.value == 8)
+				{
+					stopped_chain();
+					return false;
+				}
 				//next person request -> move to next in order
 				if(!game_logic.player2.hand.isEmpty())
 				{
 					game_logic.player2.hand = player_turn(game_logic.player2.hand, game_logic.player2);
 					currentCard.setText(top.suit + " " + top.value);
 					checkHand(game_logic.player2);
+					if(top.value == 8)
+					{
+						stopped_chain();
+						return false;
+					}
 				}
 				Gdx.graphics.requestRendering();
 				if(!game_logic.player3.hand.isEmpty())
@@ -292,6 +324,11 @@ public class Game_Display implements Screen
 					game_logic.player3.hand = player_turn(game_logic.player3.hand, game_logic.player3);
 					currentCard.setText(top.suit + " " + top.value);
 					checkHand(game_logic.player3);
+					if(top.value == 8)
+					{
+						stopped_chain();
+						return false;
+					}
 				}
 				Gdx.graphics.requestRendering();
 				if(!game_logic.player4.hand.isEmpty())
@@ -299,10 +336,15 @@ public class Game_Display implements Screen
 					game_logic.player4.hand = player_turn(game_logic.player4.hand, game_logic.player4);
 					currentCard.setText(top.suit + " " + top.value);
 					checkHand(game_logic.player4);
+					if(top.value == 8)
+					{
+						stopped_chain();
+						return false;
+					}
 				}
 				Gdx.graphics.requestRendering();
 				//end_round();
-				if(game_logic.player2.skipped && game_logic.player3.skipped && game_logic.player4.skipped)
+				if((game_logic.player2.skipped && game_logic.player3.skipped && game_logic.player4.skipped) || top.power <= 13)
 				{
 					end_chain();
 				}
@@ -315,14 +357,7 @@ public class Game_Display implements Screen
         });
 		stage.addActor(submit);
 		Gdx.graphics.requestRendering();
-		
-		//assign_points();
-		Gdx.graphics.requestRendering();
-		//setHands();
-		//continue for rounds 2 & 3 - reset hands and clear discard 
-		//at end, total points and display winner
-		Gdx.graphics.requestRendering();
-
+		//dispose();
     }
 	@Override
     public void render(float delta)
@@ -362,11 +397,19 @@ public class Game_Display implements Screen
 	@Override
 	public void dispose()
 	{
-		//dispose of textures
+		//dispose of textures and other disposable elements
 		ui.dispose();
+		checkbox_ui.dispose();
 		background.dispose();
+		card_back.dispose();
+		card_back_rotated.dispose();
+		joker.dispose();
+		spades.dispose();
+		clubs.dispose();
+		hearts.dispose();
+		diamonds.dispose();
+		temp.dispose();
 		stage.dispose();
-		
 	}
 	@Override
 	public void resize(int width, int height)
@@ -655,6 +698,7 @@ public class Game_Display implements Screen
 	private boolean checkPower(List<String> input) //only logic, no discard
 	{
 		boolean passed = false;
+		eight_stop = false;
 		List<card> check = new LinkedList<card>();
 		card joker_comp = new card("joker", 14, 14);
 		for(String temp : input)
@@ -698,6 +742,12 @@ public class Game_Display implements Screen
 			stage.addActor(dialog);
 			card_selection.uncheckAll();
 		}
+		else if(check.get(0).value == 3 && check.get(0).suit.equals("spades") && discard_deck.get(0).suit.equals("joker"))
+		{
+			//3-spade reversal (overpowers)
+			passed = true;
+			discard_deck.clear();
+		}
 		else if(check.get(0).power < discard_deck.get(0).power)
 		{
 			//dialog - card is weaker
@@ -710,19 +760,13 @@ public class Game_Display implements Screen
 			stage.addActor(dialog);
 			card_selection.uncheckAll();
 		}
-		else if(check.get(0).value == 8 && check.get(0).power > discard_deck.get(0).power)
+		else if(check.get(0).value == 8 && (check.get(0).power > discard_deck.get(0).power || discard_deck.isEmpty()))
 		{
 			//end card chain (8-stop)
-			end_of_chain = true;
+			eight_stop = true;
 			passed = true;
 			discard_deck.clear();
 			
-		}
-		else if(check.get(0).value == 3 && check.get(0).suit.equals("spades") && discard_deck.get(0).suit.equals("joker"))
-		{
-			//3-spade reversal (overpowers)
-			passed = true;
-			discard_deck.clear();
 		}
 		else
 		{
@@ -793,7 +837,7 @@ public class Game_Display implements Screen
 		else if(check.get(0).value == 8 && check.get(0).power < discard_deck.get(0).power)
 		{
 			//end card chain (8-stop)
-			end_of_chain = true;
+			eight_stop = true;
 			passed = true;
 			discard_deck.clear();
 			
@@ -1014,12 +1058,13 @@ public class Game_Display implements Screen
 				setPoor(player);
 				poor_set = true;
 			}
+			else if(tycoon_set && rich_set && poor_set)
+			{
+				setBeggar(player);
+				end_of_round = true;
+			}
 		}
-		if(tycoon_set && rich_set && poor_set && !player.hand.isEmpty())
-		{
-			setBeggar(player);
-			end_of_round = true;
-		}
+		
 		update_roles();
 	}
 	private void update_roles()
@@ -1032,7 +1077,7 @@ public class Game_Display implements Screen
 	private void end_chain()
 	{
 		dialog = new Dialog("End Chain?", skin);
-		dialog.setHeight(100);
+		dialog.setHeight(75);
 		dialog.setWidth(250);
 		dialog.setPosition(375, 250);
 		TextButton ybtn = new TextButton("Yes", skin);
@@ -1042,11 +1087,33 @@ public class Game_Display implements Screen
          	public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
 			{
 				discard_deck.clear();
+				discard_size = 0;
+				currentCard.setText("");
 				return true;
 			}
 		});
 		dialog.button(ybtn);
 		dialog.button(nbtn);
+		stage.addActor(dialog);
+	}
+	private void stopped_chain()
+	{
+		dialog = new Dialog("8-Stop - Chain Ended.", skin);
+		dialog.setHeight(75);
+		dialog.setWidth(250);
+		dialog.setPosition(375, 250);
+		TextButton ybtn = new TextButton("Exit", skin);
+		ybtn.addListener(new InputListener(){
+            @Override
+         	public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
+			{
+				discard_deck.clear();
+				discard_size = 0;
+				currentCard.setText("");
+				return true;
+			}
+		});
+		dialog.button(ybtn);
 		stage.addActor(dialog);
 	}
 	private void end_round()
@@ -1061,10 +1128,24 @@ public class Game_Display implements Screen
          	public boolean touchDown (InputEvent event, float x, float y, int pointer, int button) 
 			{
 				discard_deck.clear();
+				discard_size = 0;
 				game_logic.player1.hand.clear();
 				game_logic.player2.hand.clear();
 				game_logic.player3.hand.clear();
 				game_logic.player4.hand.clear();
+
+				for (player player : game_logic.players)
+				{
+					if(player.role.equals("tycoon") || player.role.equals("rich") || player.role.equals("poor"))
+					{
+						continue;
+					}
+					else
+					{
+						setBeggar(player);
+					}
+				}
+				update_roles();
 				assign_points();
 
 				/* setTycoon(game_logic.player1);
@@ -1183,7 +1264,7 @@ public class Game_Display implements Screen
 		}
         if(discard_deck.isEmpty())
         {
-            Random rnd = ThreadLocalRandom.current();
+            Random rnd = new Random();
             int index = rnd.nextInt(player_hand.size());
             //int played = rnd.nextInt(4);
             viable.add(player_hand.get(index));
@@ -1256,7 +1337,7 @@ public class Game_Display implements Screen
                     viable.add(card);
                     break;
                 }
-                else if(card.power > top.power)
+                else if(card.power > top.power && top.power != 14)
                 {
                     //consider playing
                     viable.add(card);
@@ -1303,7 +1384,8 @@ public class Game_Display implements Screen
             //skip, if no
             if(viable.isEmpty())
             {
-                return player_hand;
+				player.skipped = true;
+                //return player_hand;
             }
             else
             {
@@ -1317,8 +1399,7 @@ public class Game_Display implements Screen
     {
         //pick card that matched criteria -> right power (rev/no rev), right num of cards, etc. -> pass into discard (no logic, only removing card)
         discard_deck.clear();
-        hand_return = new LinkedList<card>();
-        Random rnd = ThreadLocalRandom.current();
+        Random rnd = new Random();
         int index = rnd.nextInt(input.size());
         int remove_index = 0;
 
@@ -1341,18 +1422,18 @@ public class Game_Display implements Screen
             for(card card : input)
             {
                 player_hand.remove(card);
+				discard_deck.add(card);
 				top = card;
             }
         }
-        hand_return = player_hand;
-        return hand_return;
+        return player_hand;
     }
 	private List<card> card_swap(List<card> player_hand, int num_of_cards, String role)
     {
         ai_swap = new LinkedList<card>();
         for(int i = 0; i < num_of_cards; i++)
         {
-            Random rnd = ThreadLocalRandom.current();
+            Random rnd = new Random();
             int index;
             if(role.equals("tycoon") || role.equals("rich")) // -> lowerbound
             {
